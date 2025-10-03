@@ -1,19 +1,18 @@
 export interface Cliente {
   _id?: string
   nome: string
-  email: string
-  telefone: string
-  endereco?: string
   createdAt?: Date
   updatedAt?: Date
 }
+
+export type ProdutoCategoria = 'bebida' | 'comida' | 'sobremesa' | 'outro'
 
 export interface Produto {
   _id?: string
   nome: string
   descricao: string
   preco: number
-  categoria: string
+  categoria: ProdutoCategoria
   disponivel: boolean
   createdAt?: Date
   updatedAt?: Date
@@ -26,12 +25,14 @@ export interface ItemPedido {
   preco: number
 }
 
+export type StatusPedido  = 'pendente' | 'preparando' | 'pronto' | 'entregue' | 'cancelado'
+
 export interface Pedido {
   _id?: string
   clienteId: string
   itens: ItemPedido[]
   total: number
-  status: 'pendente' | 'preparando' | 'pronto' | 'entregue' | 'cancelado'
+  status: StatusPedido
   observacoes?: string
   createdAt?: Date
   updatedAt?: Date

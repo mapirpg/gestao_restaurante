@@ -17,56 +17,57 @@ export default async function handler(
 
   const objectId = new ObjectId(id as string)
 
-  switch (req.method) {
-    case 'GET':
-      try {
-        const cliente = await collection.findOne({ _id: objectId })
-        if (!cliente) {
-          return res.status(404).json({ error: 'Cliente não encontrado' })
-        }
-        res.status(200).json(cliente)
-      } catch (error) {
-        res.status(500).json({ error: 'Erro ao buscar cliente' })
+  if (req.method === 'GET') {
+    try {
+      const cliente = await collection.findOne({ _id: objectId })
+      if (!cliente) {
+        return res.status(404).json({ error: 'Cliente não encontrado' })
       }
-      break
 
-    case 'PUT':
-      try {
-        const updateData = {
-          ...req.body,
-          updatedAt: new Date()
-        }
-        delete updateData._id // Remove o _id para evitar conflitos
+      return res.status(200).json(cliente)
 
-        const result = await collection.updateOne(
-          { _id: objectId },
-          { $set: updateData }
-        )
-
-        if (result.matchedCount === 0) {
-          return res.status(404).json({ error: 'Cliente não encontrado' })
-        }
-
-        res.status(200).json({ message: 'Cliente atualizado com sucesso' })
-      } catch (error) {
-        res.status(500).json({ error: 'Erro ao atualizar cliente' })
+    } catch (error: unknown ) {
+      throw new Error(JSON.stringify(error) || 'Erro ao buscar cliente')
+    }
+  } else if (req.method === 'PUT') {
+    try {
+      const updateData = {
+        ...req.body,
+        updatedAt: new Date()
       }
-      break
 
-    case 'DELETE':
-      try {
-        const result = await collection.deleteOne({ _id: objectId })
-        if (result.deletedCount === 0) {
-          return res.status(404).json({ error: 'Cliente não encontrado' })
-        }
-        res.status(200).json({ message: 'Cliente deletado com sucesso' })
-      } catch (error) {
-        res.status(500).json({ error: 'Erro ao deletar cliente' })
+      delete updateData._id
+
+      const result = await collection.updateOne(
+        { _id: objectId },
+        { $set: updateData }
+      )
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ error: 'Cliente não encontrado' })
       }
-      break
 
-    default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE'])
-      res.status(405).end(`Method ${req.method} Not Allowed`)
+      return res.status(200).json({ message: 'Cliente atualizado com sucesso' })
+
+    } catch (error: unknown ) {
+      throw new Error(JSON.stringify(error) || 'Erro ao atualizar cliente')
+    }
+  } else if (req.method === 'DELETE') {
+    try {
+      const result = await collection.deleteOne({ _id: objectId })
+
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ error: 'Cliente não encontrado' })
+      }
+
+      return res.status(200).json({ message: 'Cliente deletado com sucesso' })
+
+    } catch (error: unknown ) {
+      throw new Error(JSON.stringify(error) || 'Erro ao deletar cliente')
+    }
+  } else {
+    res.status(405).json({ error: 'Method Not Allowed' })
   }
+
+  
 }

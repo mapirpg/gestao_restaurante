@@ -13,13 +13,25 @@ export default async function handler(
   switch (req.method) {
     case 'GET':
       try {
-        const { categoria, disponivel } = req.query
-        const filter: any = {}
+        const consulta = req.query
+        let categorias: string | string[] = []
+        let disponiveis: string | string[] = []
         
-        if (categoria) filter.categoria = categoria
-        if (disponivel) filter.disponivel = disponivel === 'true'
+        if (consulta.categoria) {
+          categorias = consulta.categoria
+        }
 
-        const produtos = await collection.find(filter).toArray()
+        if (consulta.disponivel) {
+          disponiveis = consulta.disponivel
+        }
+
+        const filtrados = {
+          categorias,
+          disponiveis
+        }
+
+        const produtos = await collection.find(filtrados).toArray()
+
         res.status(200).json(produtos)
       } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar produtos' })
