@@ -1,40 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Sistema de Gestão de Restaurante
 
-## Getting Started
+Sistema de gestão para restaurante desenvolvido como trabalho acadêmico utilizando Next.js e TypeScript.
 
-First, run the development server:
+## 📋 Pré-requisitos
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Antes de iniciar, certifique-se de ter instalado em seu computador:
+
+- [Node.js](https://nodejs.org/) (versão 18 ou superior)
+- [npm](https://www.npmjs.com/) (geralmente vem com o Node.js)
+- [Git](https://git-scm.com/)
+
+## 🚀 Como inicializar o projeto
+
+### 1. Clone o repositório
+
+```powershell
+git clone <URL_DO_REPOSITORIO>
+cd gestao_restaurante
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Instale as dependências
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+```powershell
+npm install
+```
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+### 3. Gere a build de produção
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+```powershell
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Execute o projeto
 
-## Learn More
+```powershell
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 5. Acesse o sistema
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+Abra seu navegador e acesse: [http://localhost:3000](http://localhost:3000)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ Tecnologias utilizadas
 
-## Deploy on Vercel
+- **Next.js 15.5.4** - Framework React
+- **React 19.1.0** - Biblioteca para interface
+- **TypeScript** - Tipagem estática
+- **ESLint** - Ferramenta de análise de código que identifica padrões problemáticos e garante qualidade do código
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔍 ESLint - Verificação de Código
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+O ESLint está configurado para manter a qualidade do código. Para verificar se seu código está seguindo os padrões:
+
+```powershell
+npm run lint
+```
+
+O ESLint irá:
+
+- Identificar erros de sintaxe
+- Verificar padrões de código
+- Sugerir melhorias
+- Garantir consistência no projeto
+
+## 📁 Estrutura do projeto
+
+```
+├── src/
+│   ├── pages/          # Páginas do sistema
+│   │   ├── api/        # Rotas da API
+│   │   ├── _app.tsx    # Configuração global da aplicação
+│   │   └── index.tsx   # Página inicial
+│   └── styles/         # Arquivos de estilo
+├── public/             # Arquivos estáticos
+├── .next/              # Arquivos gerados pelo Next.js
+└── ...
+```
+
+## ❗ Problemas comuns
+
+### Erro de dependências
+
+Se houver problemas com as dependências, tente:
+
+```powershell
+Remove-Item -Recurse -Force node_modules
+Remove-Item package-lock.json
+npm install
+```
