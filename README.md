@@ -149,13 +149,6 @@ Ou use ferramentas como **Postman** ou **Insomnia** para testar as APIs.
 └── ...
 ```
 
-## 👥 Membros do grupo
-
-- [Nome do membro 1]
-- [Nome do membro 2]
-- [Nome do membro 3]
-- [Adicione os nomes dos membros do grupo]
-
 ## ❗ Problemas comuns
 
 ### MongoDB não está rodando
