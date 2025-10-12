@@ -39,7 +39,8 @@ export default function Home() {
     { method: 'PUT', endpoint: '/api/clientes/[id]', description: 'Atualiza cliente' },
     { method: 'DELETE', endpoint: '/api/clientes/[id]', description: 'Remove cliente' },
     { method: 'GET', endpoint: '/api/produtos', description: 'Lista produtos' },
-    { method: 'POST', endpoint: '/api/produtos', description: 'Cria produto' }
+    { method: 'POST', endpoint: '/api/produtos', description: 'Cria produto' },
+    { method: 'DELETE', endpoint: '/api/produtos/[id]', description: 'Remove produto' }
   ];
 
   function getMethodColor(method: string) {
