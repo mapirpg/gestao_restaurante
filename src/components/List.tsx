@@ -1,11 +1,14 @@
-import { Card, IconButton, Typography } from "@mui/material";
+import { Box, Card, IconButton, Typography } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
+import { Edit } from "@mui/icons-material";
 
 export const List = ({
   itens,
-  deletarItem
+  deletarItem,
+  editarItem
 }: {
   deletarItem: (id: string) => Promise<boolean>;
+  editarItem: (id: string) => void;
   itens: any[];
 }) => {
     return itens?.length > 0 ? itens.map((item) => (
@@ -21,9 +24,14 @@ export const List = ({
         }}
       >
         <Typography>Nome: {item.nome}</Typography>
-        <IconButton onClick={() => item?._id && deletarItem(item._id)}>
-          <DeleteIcon />
-        </IconButton>
+        <Box>
+          <IconButton onClick={() => item?._id && editarItem(item._id)}>
+            <Edit />
+          </IconButton>
+          <IconButton onClick={() => item?._id && deletarItem(item._id)}>
+            <DeleteIcon />
+          </IconButton>
+        </Box>
       </Card>
     )) : null
   }
