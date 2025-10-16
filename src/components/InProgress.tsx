@@ -30,7 +30,7 @@ import React from "react";
 export interface Filtros {
   busca: string;
   status: string;
-  cliente: string;
+  clienteId: string;
   ordenacao: 'data_desc' | 'data_asc' | 'valor_desc' | 'valor_asc';
   dataInicio: string;
   dataFim: string;
@@ -76,7 +76,7 @@ export const InProgress = ({
     <Box>
       <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">🔍 Filtros Avançados</Typography>
+          <Typography variant="h6">🔍 Filtros </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Atualizar dados">
               <IconButton size="small" onClick={() => atualizarPedidos()}>
@@ -133,9 +133,9 @@ export const InProgress = ({
               <FormControl fullWidth size="small">
                 <InputLabel>Cliente</InputLabel>
                 <Select
-                  value={filtros.cliente}
+                  value={filtros.clienteId}
                   label="Cliente"
-                  onChange={(e) => setFiltros({ ...filtros, cliente: e.target.value })}
+                  onChange={(e) => setFiltros({ ...filtros, clienteId: e.target.value })}
                 >
                   <MenuItem value="todos">Todos</MenuItem>
                   {clientes.map(cliente => (
@@ -164,7 +164,7 @@ export const InProgress = ({
             </Grid>
 
             <Grid size={2}>
-              <Badge badgeContent={filtrosAbertos ? pedidosFiltrados.length : pedidos.length} color="primary">
+              <Badge badgeContent={pedidosFiltrados.length} color="primary">
                 <Button
                   variant="contained"
                   startIcon={<FilterList />}

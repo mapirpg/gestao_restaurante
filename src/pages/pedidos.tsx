@@ -46,15 +46,13 @@ export default function Pedidos() {
   const [observacoes, setObservacoes] = React.useState<string>('');
 
   const [pedidos, setPedidos] = React.useState<Pedido[]>([]);
-  const [pedidosFiltrados, setPedidosFiltrados] = React.useState<Pedido[]>([]);
   const [pedidoSelecionado, setPedidoSelecionado] = React.useState<Pedido>();
   const [ancoraStatusMenu, setAncoraStatusMenu] = React.useState<null | HTMLElement>(null);
 
-  // Filtros avançados - agora em um único objeto
   const [filtrosAbertos, setFiltrosAbertos] = React.useState(false);
   const [filtros, setFiltros] = React.useState({
     status: 'todos',
-    cliente: 'todos',
+    clienteId: 'todos',
     busca: '',
     ordenacao: 'data_desc' as 'data_desc' | 'data_asc' | 'valor_desc' | 'valor_asc',
     dataInicio: '',
@@ -91,14 +89,51 @@ export default function Pedidos() {
   }
 
   async function listarPedidos(): Promise<Pedido[] | null> {
-    const res = await fetch(apiUrl + '/pedidos', {
+    const params = new URLSearchParams();
+    
+    if (filtros.status !== 'todos') {
+      params.append('status', filtros.status);
+    }
+    
+    if (filtros.clienteId !== 'todos') {
+      params.append('clienteId', filtros.clienteId);
+    }
+    
+    if (filtros.busca) {
+      params.append('busca', filtros.busca);
+    }
+    
+    if (filtros.ordenacao) {
+      params.append('ordenacao', filtros.ordenacao);
+    }
+    
+    if (filtros.dataInicio) {
+      params.append('dataInicio', filtros.dataInicio);
+    }
+    
+    if (filtros.dataFim) {
+      params.append('dataFim', filtros.dataFim);
+    }
+    
+    if (filtros.valorMin) {
+      params.append('valorMin', filtros.valorMin);
+    }
+    
+    if (filtros.valorMax) {
+      params.append('valorMax', filtros.valorMax);
+    }
+
+    const url = `${apiUrl}/pedidos?${params.toString()}`;
+    console.log('Buscando pedidos com filtros:', url);
+
+    const res = await fetch(url, {
       method: 'GET',
       headers,
     });
 
     if (res.ok) {
       const pedidos: Pedido[] = await res.json();
-      console.log('Pedidos listados:', pedidos);
+      console.log('Pedidos retornados do backend:', pedidos.length);
       return pedidos;
     } else {
       console.error('Erro ao listar pedidos:', res.statusText);
@@ -202,12 +237,12 @@ export default function Pedidos() {
       setPedidos(lista || []);
       setCarregandoPedidos(false);
     }
-  }, [tabValue]);
+  }, [tabValue, filtros]);
 
   function limparFiltros() {
     setFiltros({
       status: 'todos',
-      cliente: 'todos',
+      clienteId: 'todos',
       busca: '',
       ordenacao: 'data_desc',
       dataInicio: '',
@@ -257,8 +292,7 @@ export default function Pedidos() {
 
     if (resposta.ok) {
       setToastMessage({ message: 'Status do pedido atualizado com sucesso', type: 'success' });
-      const pedidosAtualizados = await listarPedidos() || [];
-      setPedidos(pedidosAtualizados);
+      await atualizarPedidos();
     } else {
       setToastMessage({ message: `Erro ao atualizar status do pedido`, type: 'error' });
     }
@@ -280,72 +314,6 @@ export default function Pedidos() {
   React.useEffect(() => {
     inicializarDados();
   }, []);
-
-  React.useEffect(() => {
-      function aplicarFiltros() {
-        let resultado = [...pedidos];
-
-        if (filtros.status !== 'todos') {
-          resultado = resultado.filter(p => p.status === filtros.status);
-        }
-
-        if (filtros.cliente !== 'todos') {
-          resultado = resultado.filter(p => p.cliente?._id === filtros.cliente);
-        }
-
-        if (filtros.busca) {
-          resultado = resultado.filter(p => 
-            p._id?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-            p.cliente?.nome.toLowerCase().includes(filtros.busca.toLowerCase())
-          );
-        }
-
-        if (filtros.dataInicio) {
-          resultado = resultado.filter(p => {
-            const dataPedido = new Date(p.createdAt || '');
-            const dataInicio = new Date(filtros.dataInicio);
-            return dataPedido >= dataInicio;
-          });
-        }
-
-        if (filtros.dataFim) {
-          resultado = resultado.filter(p => {
-            const dataPedido = new Date(p.createdAt || '');
-            const dataFim = new Date(filtros.dataFim);
-            dataFim.setHours(23, 59, 59, 999);
-            return dataPedido <= dataFim;
-          });
-        }
-
-        if (filtros.valorMin) {
-          resultado = resultado.filter(p => p.total >= parseFloat(filtros.valorMin));
-        }
-
-        if (filtros.valorMax) {
-          resultado = resultado.filter(p => p.total <= parseFloat(filtros.valorMax));
-        }
-
-        switch (filtros.ordenacao) {
-          case 'data_desc':
-            resultado.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
-            break;
-          case 'data_asc':
-            resultado.sort((a, b) => new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime());
-            break;
-          case 'valor_desc':
-            resultado.sort((a, b) => b.total - a.total);
-            break;
-          case 'valor_asc':
-            resultado.sort((a, b) => a.total - b.total);
-            break;
-        }
-
-        setPedidosFiltrados(resultado);
-      }
-
-
-    aplicarFiltros();
-  }, [pedidos, filtros]);
 
   return (
     <div>
@@ -492,10 +460,10 @@ export default function Pedidos() {
       {tabValue === 1 && (
         <InProgress
           clientes={clientes}
-          pedidosFiltrados={pedidosFiltrados}
+          pedidosFiltrados={pedidos}
           produtos={produtos}
           corDoStatus={corDoStatus}
-          pedidos={pedidosFiltrados} 
+          pedidos={pedidos} 
           carregandoPedidos={carregandoPedidos}
           filtrosAbertos={filtrosAbertos}
           setFiltrosAbertos={setFiltrosAbertos}
@@ -511,7 +479,7 @@ export default function Pedidos() {
       )}
 
       {tabValue === 2 && (
-        <Statistics corDoStatus={corDoStatus} pedidos={pedidos} />
+        <Statistics corDoStatus={corDoStatus} />
       )}
     </div>
   )

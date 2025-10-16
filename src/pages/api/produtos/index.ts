@@ -1,12 +1,6 @@
- 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getDatabase } from '@/database'
 import { Produto, ProdutoCategoria } from '@/database/models'
-
-interface FiltrosProduto {
-  categoria?: ProdutoCategoria
-  disponivel?: boolean
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,18 +12,63 @@ export default async function handler(
   switch (req.method) {
     case 'GET':
       try {
-        const consulta = req.query
-        const filtro: FiltrosProduto = {}
+        const { categoria, disponivel, busca, precoMin, precoMax, ordenacao } = req.query
         
-        if (consulta.categoria) {
-          filtro.categoria = consulta.categoria as ProdutoCategoria
+        const query: any = {}
+        
+        if (categoria && categoria !== 'todas') {
+          query.categoria = categoria as ProdutoCategoria
         }
 
-        if (consulta.disponivel) {
-          filtro.disponivel = consulta.disponivel === 'true'
+        if (disponivel !== undefined && disponivel !== 'todos') {
+          query.disponivel = disponivel === 'true'
         }
 
-        const produtos = await collection.find(filtro).toArray()
+        if (busca && busca !== '') {
+          query.$or = [
+            { nome: { $regex: busca, $options: 'i' } },
+            { descricao: { $regex: busca, $options: 'i' } }
+          ]
+        }
+
+        if (precoMin || precoMax) {
+          query.preco = {}
+          
+          if (precoMin) {
+            query.preco.$gte = parseFloat(precoMin as string)
+          }
+          
+          if (precoMax) {
+            query.preco.$lte = parseFloat(precoMax as string)
+          }
+        }
+
+        let sort: any = { nome: 1 }
+
+        if (ordenacao) {
+          switch (ordenacao) {
+            case 'nome_asc':
+              sort = { nome: 1 }
+              break
+            case 'nome_desc':
+              sort = { nome: -1 }
+              break
+            case 'preco_asc':
+              sort = { preco: 1 }
+              break
+            case 'preco_desc':
+              sort = { preco: -1 }
+              break
+          }
+        }
+
+        const produtos = await collection
+          .find(query)
+          .sort(sort)
+          .toArray()
+
+        console.log('Query MongoDB (Produtos):', JSON.stringify(query, null, 2))
+        console.log('Total de produtos encontrados:', produtos.length)
 
         res.status(200).json(produtos)
       } catch (error) {

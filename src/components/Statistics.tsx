@@ -1,6 +1,5 @@
  
-import { Pedido } from "@/database/models";
-import { TrendingUp, AttachMoney, Person, Restaurant } from "@mui/icons-material";
+import { TrendingUp, AttachMoney, Person, Restaurant, Refresh } from "@mui/icons-material";
 import { 
   Typography, 
   Grid,
@@ -9,8 +8,14 @@ import {
   Paper,
   Divider,
   Stack,
-  ChipProps} from "@mui/material";
+  ChipProps,
+  CircularProgress,
+  IconButton,
+  Tooltip} from "@mui/material";
 import React, { useEffect } from "react";
+import { API_BASE_URL, headers } from "@/config";
+
+const apiUrl = API_BASE_URL;
 
 export interface Estatisticas {
   totalPedidos: number;
@@ -23,10 +28,8 @@ export interface Estatisticas {
 }
 
 export const Statistics = ({
-  pedidos,
   corDoStatus
 }: {
-  pedidos: Pedido[],
   corDoStatus: (status: string) => ChipProps['color']
 }) => {
   const [estatisticas, setEstatisticas] = React.useState<Estatisticas>({
@@ -39,69 +42,51 @@ export const Statistics = ({
     faturamentoPorCliente: []
   });
 
-  function calcularEstatisticas(listaPedidos: Pedido[]) {
-    const totalPedidos = listaPedidos.length;
-    const totalFaturamento = listaPedidos.reduce((acc, p) => acc + p.total, 0);
-    const ticketMedio = totalPedidos > 0 ? totalFaturamento / totalPedidos : 0;
+  const [carregando, setCarregando] = React.useState(false);
 
-    const pedidosPorStatus = listaPedidos.reduce((acc, p) => {
-      acc[p.status] = (acc[p.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Cliente mais frequente
-    const clientesMap = listaPedidos.reduce((acc, p) => {
-      const nome = p.cliente?.nome || 'Sem nome';
-      acc[nome] = (acc[nome] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const clienteMaisFrequente = Object.entries(clientesMap).sort((a, b) => b[1] - a[1])[0];
-
-    // Produto mais vendido
-    const produtosMap = listaPedidos.reduce((acc, p) => {
-      p.itens.forEach(item => {
-        acc[item.nome] = (acc[item.nome] || 0) + item.quantidade;
+  async function buscarEstatisticas() {
+    setCarregando(true);
+    try {
+      const response = await fetch(`${apiUrl}/estatisticas`, {
+        method: 'GET',
+        headers,
       });
-      return acc;
-    }, {} as Record<string, number>);
 
-    const produtoMaisVendido = Object.entries(produtosMap).sort((a, b) => b[1] - a[1])[0];
-
-    // Faturamento por cliente
-    const faturamentoPorClienteMap = listaPedidos.reduce((acc, p) => {
-      const nome = p.cliente?.nome || 'Sem nome';
-      acc[nome] = (acc[nome] || 0) + p.total;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const faturamentoPorCliente = Object.entries(faturamentoPorClienteMap)
-      .map(([nome, total]) => ({ nome, total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5);
-
-    setEstatisticas({
-      totalPedidos,
-      totalFaturamento,
-      ticketMedio,
-      pedidosPorStatus,
-      clienteMaisFrequente: clienteMaisFrequente ? { nome: clienteMaisFrequente[0], total: clienteMaisFrequente[1] } : undefined,
-      produtoMaisVendido: produtoMaisVendido ? { nome: produtoMaisVendido[0], quantidade: produtoMaisVendido[1] } : undefined,
-      faturamentoPorCliente
-    });
+      if (response.ok) {
+        const dados: Estatisticas = await response.json();
+        console.log('Estatísticas do backend:', dados);
+        setEstatisticas(dados);
+      } else {
+        console.error('Erro ao buscar estatísticas:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+    } finally {
+      setCarregando(false);
+    }
   }
 
   useEffect(() => {
-    calcularEstatisticas(pedidos);
-  }, [pedidos]);
+    buscarEstatisticas();
+  }, []);
 
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">📊 Estatísticas</Typography>
-
+        <Typography variant="h6">📊 Estatísticas </Typography>
+        <Tooltip title="Atualizar estatísticas">
+          <IconButton size="small" onClick={buscarEstatisticas} disabled={carregando}>
+            <Refresh />
+          </IconButton>
+        </Tooltip>
       </Box>
 
+      {carregando ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
         <Grid container spacing={2}>
           <Grid size={2.4}>
             <Paper elevation={1} sx={{ p: 2, bgcolor: '#e3f2fd', textAlign: 'center' }}>
@@ -179,6 +164,8 @@ export const Statistics = ({
             ))}
           </Box>
         </Box>
+        </>
+      )}
     </Paper>
   )
 }
