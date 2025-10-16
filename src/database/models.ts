@@ -12,6 +12,7 @@ export interface Produto {
   nome: string
   descricao: string
   preco: number
+  quantidade: number
   categoria: ProdutoCategoria
   disponivel: boolean
   createdAt?: Date

@@ -49,7 +49,9 @@ export default function Home() {
     { method: 'DELETE', endpoint: '/api/produtos/[id]', description: 'Remove produto' },
     { method: 'GET', endpoint: '/api/pedidos', description: 'Lista todos os pedidos' },
     { method: 'POST', endpoint: '/api/pedidos', description: 'Cria um novo pedido' },
-    { method: 'PUT', endpoint: '/api/pedidos', description: 'Atualiza status do pedido' }
+    { method: 'PUT', endpoint: '/api/pedidos', description: 'Atualiza status do pedido' },
+    { method: 'PUT', endpoint: '/api/produtos/[id]', description: 'Atualiza produto' },
+    { method: 'DELETE', endpoint: '/api/produtos/[id]', description: 'Remove produto' }
   ];
 
   function getMethodColor(method: string) {
