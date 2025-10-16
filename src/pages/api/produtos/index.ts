@@ -53,8 +53,35 @@ export default async function handler(
       }
       break
 
+    case 'PUT':
+      try {
+        const { _id, ...updateData } = req.body
+        
+        const result = await collection.findOneAndUpdate(
+          { _id },
+          { 
+            $set: {
+              ...updateData,
+              updatedAt: new Date()
+            }
+          },
+          { returnDocument: 'after' }
+        )
+
+        if (!result) {
+          res.status(404).json({ error: 'Produto não encontrado' })
+          return
+        }
+
+        res.status(200).json(result)
+      } catch (error) {
+        console.error('Erro ao atualizar produto:', error)
+        res.status(500).json({ error: 'Erro ao atualizar produto' })
+      }
+      break
+
     default:
-      res.setHeader('Allow', ['GET', 'POST'])
+      res.setHeader('Allow', ['GET', 'POST', 'PUT'])
       res.status(405).end(`Method ${req.method} Not Allowed`)
   }
 }

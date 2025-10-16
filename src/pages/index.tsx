@@ -40,6 +40,7 @@ export default function Home() {
     { method: 'DELETE', endpoint: '/api/clientes/[id]', description: 'Remove cliente' },
     { method: 'GET', endpoint: '/api/produtos', description: 'Lista produtos' },
     { method: 'POST', endpoint: '/api/produtos', description: 'Cria produto' },
+    { method: 'PUT', endpoint: '/api/produtos/[id]', description: 'Atualiza produto' },
     { method: 'DELETE', endpoint: '/api/produtos/[id]', description: 'Remove produto' }
   ];
 
