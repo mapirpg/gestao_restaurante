@@ -7,7 +7,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const db = await getDatabase()
-  const collection = db.collection<Produto>('produtos')
+  const collection = db.collection('produtos')
 
   switch (req.method) {
     case 'GET':
@@ -67,13 +67,9 @@ export default async function handler(
           .sort(sort)
           .toArray()
 
-        console.log('Query MongoDB (Produtos):', JSON.stringify(query, null, 2))
-        console.log('Total de produtos encontrados:', produtos.length)
-
         res.status(200).json(produtos)
       } catch (error) {
-        console.error('Erro ao buscar produtos:', error)
-        res.status(500).json({ error: 'Erro ao buscar produtos' })
+        res.status(500).json({ error: `Erro ao buscar produtos: ${JSON.stringify(error)}` })
       }
       break
 
@@ -87,8 +83,7 @@ export default async function handler(
         const result = await collection.insertOne(produto)
         res.status(201).json({ _id: result.insertedId.toString(), ...produto })
       } catch (error) {
-        console.error('Erro ao criar produto:', error)
-        res.status(500).json({ error: 'Erro ao criar produto' })
+        res.status(500).json({ error: `Erro ao criar produto ${JSON.stringify(error)}` })
       }
       break
 
@@ -114,8 +109,7 @@ export default async function handler(
 
         res.status(200).json(result)
       } catch (error) {
-        console.error('Erro ao atualizar produto:', error)
-        res.status(500).json({ error: 'Erro ao atualizar produto' })
+        res.status(500).json({ error: `Erro ao atualizar produto ${JSON.stringify(error)}` })
       }
       break
 

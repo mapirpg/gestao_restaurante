@@ -76,7 +76,7 @@ export const InProgress = ({
     <Box>
       <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">🔍 Filtros </Typography>
+          <Typography variant="h6">Filtros </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Atualizar dados">
               <IconButton size="small" onClick={() => atualizarPedidos()}>
@@ -311,7 +311,7 @@ export const InProgress = ({
 
               <CardContent>
                 <Typography variant="subtitle2" gutterBottom>Itens:</Typography>
-                {pedido.itens.map((item, index) => (
+                {pedido?.itens?.map((item, index) => (
                   <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography variant="body2">
                       {item.nome} x{item.quantidade}
@@ -327,7 +327,7 @@ export const InProgress = ({
                     Total:
                   </Typography>
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                    R$ {pedido.total.toFixed(2)}
+                    R$ {pedido?.total?.toFixed(2)}
                   </Typography>
                 </Box>
               </CardContent>
@@ -339,7 +339,7 @@ export const InProgress = ({
                 Nenhum pedido encontrado
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {filtros.status !== 'todos' || filtros.cliente !== 'todos' || filtros.busca
+                {filtros.status !== 'todos' || filtros.clienteId !== 'todos' || filtros.busca
                   ? 'Tente ajustar os filtros'
                   : 'Crie um novo pedido para começar'}
               </Typography>

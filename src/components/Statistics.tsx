@@ -1,4 +1,3 @@
- 
 import { TrendingUp, AttachMoney, Person, Restaurant, Refresh } from "@mui/icons-material";
 import { 
   Typography, 
@@ -11,9 +10,11 @@ import {
   ChipProps,
   CircularProgress,
   IconButton,
-  Tooltip} from "@mui/material";
+  Tooltip,
+  AlertProps} from "@mui/material";
 import React, { useEffect } from "react";
 import { API_BASE_URL, headers } from "@/config";
+import { Toast } from "./Toast";
 
 const apiUrl = API_BASE_URL;
 
@@ -32,6 +33,7 @@ export const Statistics = ({
 }: {
   corDoStatus: (status: string) => ChipProps['color']
 }) => {
+  const [toastMessage, setToastMessage] = React.useState<{ message: string | undefined, type: AlertProps['severity']} | undefined>();
   const [estatisticas, setEstatisticas] = React.useState<Estatisticas>({
     totalPedidos: 0,
     totalFaturamento: 0,
@@ -54,13 +56,13 @@ export const Statistics = ({
 
       if (response.ok) {
         const dados: Estatisticas = await response.json();
-        console.log('Estatísticas do backend:', dados);
         setEstatisticas(dados);
+        setToastMessage({ message: 'Estatísticas atualizadas com sucesso!', type: 'success' });
       } else {
-        console.error('Erro ao buscar estatísticas:', response.statusText);
+        setToastMessage({ message: 'Erro ao carregar estatísticas', type: 'error' });
       }
     } catch (error) {
-      console.error('Erro ao buscar estatísticas:', error);
+      setToastMessage({ message: 'Erro ao conectar com o servidor', type: 'error' });
     } finally {
       setCarregando(false);
     }
@@ -71,101 +73,114 @@ export const Statistics = ({
   }, []);
 
   return (
-    <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">📊 Estatísticas </Typography>
-        <Tooltip title="Atualizar estatísticas">
-          <IconButton size="small" onClick={buscarEstatisticas} disabled={carregando}>
-            <Refresh />
-          </IconButton>
-        </Tooltip>
-      </Box>
+    <>
+      <Toast
+        open={!!toastMessage}
+        onClose={() => setToastMessage(undefined)}
+        type={toastMessage?.type}
+        message={toastMessage?.message}
+      />
 
-      {carregando ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
+      <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">Estatísticas</Typography>
+          <Tooltip title="Atualizar estatísticas">
+            <IconButton size="small" onClick={buscarEstatisticas} disabled={carregando}>
+              <Refresh />
+            </IconButton>
+          </Tooltip>
         </Box>
-      ) : (
-        <>
-        <Grid container spacing={2}>
-          <Grid size={2.4}>
-            <Paper elevation={1} sx={{ p: 2, bgcolor: '#e3f2fd', textAlign: 'center' }}>
-              <Restaurant color="primary" sx={{ fontSize: 40 }} />
-              <Typography variant="h4">{estatisticas.totalPedidos}</Typography>
-              <Typography variant="body2" color="text.secondary">Total de Pedidos</Typography>
-            </Paper>
-          </Grid>
 
-          <Grid size={2.4}>
-            <Paper elevation={1} sx={{ p: 2, bgcolor: '#e8f5e9', textAlign: 'center' }}>
-              <AttachMoney color="success" sx={{ fontSize: 40 }} />
-              <Typography variant="h4">R$ {estatisticas.totalFaturamento.toFixed(2)}</Typography>
-              <Typography variant="body2" color="text.secondary">Faturamento Total</Typography>
-            </Paper>
-          </Grid>
-
-          <Grid size={2.4}>
-            <Paper elevation={1} sx={{ p: 2, bgcolor: '#fff3e0', textAlign: 'center' }}>
-              <TrendingUp color="warning" sx={{ fontSize: 40 }} />
-              <Typography variant="h4">R$ {estatisticas.ticketMedio.toFixed(2)}</Typography>
-              <Typography variant="body2" color="text.secondary">Ticket Médio</Typography>
-            </Paper>
-          </Grid>
-
-          <Grid size={2.4}>
-            <Paper elevation={1} sx={{ p: 2, bgcolor: '#f3e5f5', textAlign: 'center' }}>
-              <Person color="secondary" sx={{ fontSize: 40 }} />
-              <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 1 }}>
-                {estatisticas.clienteMaisFrequente?.nome || 'N/A'}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Cliente mais frequente ({estatisticas.clienteMaisFrequente?.total || 0} pedidos)
-              </Typography>
-            </Paper>
-          </Grid>
-
-          <Grid size={2.4}>
-            <Paper elevation={1} sx={{ p: 2, bgcolor: '#fce4ec', textAlign: 'center' }}>
-              <Restaurant sx={{ fontSize: 40, color: '#c2185b' }} />
-              <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 1 }}>
-                {estatisticas.produtoMaisVendido?.nome || 'N/A'}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Produto mais vendido ({estatisticas.produtoMaisVendido?.quantidade || 0} unidades)
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 2 }} />
-
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <Box>
-            <Typography variant="subtitle2" gutterBottom>Status dos Pedidos:</Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {Object.entries(estatisticas.pedidosPorStatus).map(([status, count]) => (
-                <Chip
-                  key={status}
-                  label={`${status}: ${count}`}
-                  color={corDoStatus(status)}
-                  size="small"
-                />
-              ))}
-            </Stack>
+        {carregando ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
           </Box>
+        ) : (
+          <>
+            <Grid container spacing={2}>
+              <Grid size={2.4}>
+                <Paper elevation={1} sx={{ p: 2, bgcolor: '#e3f2fd', textAlign: 'center' }}>
+                  <Restaurant color="primary" sx={{ fontSize: 40 }} />
+                  <Typography variant="h4">{estatisticas.totalPedidos}</Typography>
+                  <Typography variant="body2" color="text.secondary">Total de Pedidos</Typography>
+                </Paper>
+              </Grid>
 
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle2" gutterBottom>Top 5 Clientes (Faturamento):</Typography>
-            {estatisticas.faturamentoPorCliente.slice(0, 5).map((cliente, index) => (
-              <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography variant="body2">{index + 1}. {cliente.nome}</Typography>
-                <Typography variant="body2" fontWeight="bold">R$ {cliente.total.toFixed(2)}</Typography>
+              <Grid size={2.4}>
+                <Paper elevation={1} sx={{ p: 2, bgcolor: '#e8f5e9', textAlign: 'center' }}>
+                  <AttachMoney color="success" sx={{ fontSize: 40 }} />
+                  <Typography variant="h4">R$ {estatisticas.totalFaturamento.toFixed(2)}</Typography>
+                  <Typography variant="body2" color="text.secondary">Faturamento Total</Typography>
+                </Paper>
+              </Grid>
+
+              <Grid size={2.4}>
+                <Paper elevation={1} sx={{ p: 2, bgcolor: '#fff3e0', textAlign: 'center' }}>
+                  <TrendingUp color="warning" sx={{ fontSize: 40 }} />
+                  <Typography variant="h4">R$ {estatisticas.ticketMedio.toFixed(2)}</Typography>
+                  <Typography variant="body2" color="text.secondary">Ticket Médio</Typography>
+                </Paper>
+              </Grid>
+
+              <Grid size={2.4}>
+                <Paper elevation={1} sx={{ p: 2, bgcolor: '#f3e5f5', textAlign: 'center' }}>
+                  <Person color="secondary" sx={{ fontSize: 40 }} />
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 1 }}>
+                    {estatisticas.clienteMaisFrequente?.nome || 'N/A'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Cliente mais frequente ({estatisticas.clienteMaisFrequente?.total || 0} pedidos)
+                  </Typography>
+                </Paper>
+              </Grid>
+
+              <Grid size={2.4}>
+                <Paper elevation={1} sx={{ p: 2, bgcolor: '#fce4ec', textAlign: 'center' }}>
+                  <Restaurant sx={{ fontSize: 40, color: '#c2185b' }} />
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 1 }}>
+                    {estatisticas.produtoMaisVendido?.nome || 'N/A'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Produto mais vendido ({estatisticas.produtoMaisVendido?.quantidade || 0} unidades)
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>Status dos Pedidos:</Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {Object.entries(estatisticas.pedidosPorStatus).map(([status, count]) => (
+                    <Chip
+                      key={status}
+                      label={`${status}: ${count}`}
+                      color={corDoStatus(status)}
+                      size="small"
+                    />
+                  ))}
+                </Stack>
               </Box>
-            ))}
-          </Box>
-        </Box>
-        </>
-      )}
-    </Paper>
+
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" gutterBottom>Top 5 Clientes (Faturamento):</Typography>
+                {estatisticas.faturamentoPorCliente.length > 0 ? (
+                  estatisticas.faturamentoPorCliente.slice(0, 5).map((cliente, index) => (
+                    <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="body2">{index + 1}. {cliente.nome}</Typography>
+                      <Typography variant="body2" fontWeight="bold">R$ {cliente.total.toFixed(2)}</Typography>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">Nenhum dado disponível</Typography>
+                )}
+              </Box>
+            </Box>
+          </>
+        )}
+      </Paper>
+    </>
   )
 }

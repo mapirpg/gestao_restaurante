@@ -22,7 +22,6 @@ export default async function handler(
 
       res.status(201).json({ _id: result.insertedId.toString(), ...cliente })
     } catch (error: unknown ) {
-      console.error('Erro ao criar cliente:', error)
       res.status(500).json({ error: 'Erro ao criar cliente' })
     }
   } else if (req.method === 'GET') {
@@ -30,7 +29,6 @@ export default async function handler(
       const clientes = await collection.find({}).toArray()
       res.status(200).json(clientes)
     } catch (error: unknown ) {
-      console.error('Erro ao buscar clientes:', error)
       res.status(500).json({ error: 'Erro ao buscar clientes' })
     }
   } else {

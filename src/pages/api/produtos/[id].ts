@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getDatabase } from '@/database'
-import { Produto } from '@/database/models'
 import { ObjectId } from 'mongodb'
 
 export default async function handler(
@@ -14,7 +13,7 @@ export default async function handler(
   }
 
   const db = await getDatabase()
-  const collection = db.collection<Produto & { _id: ObjectId }>('produtos')
+  const collection = db.collection('produtos')
 
   switch (req.method) {
     case 'PUT':
@@ -39,8 +38,7 @@ export default async function handler(
 
         res.status(200).json(result)
       } catch (error) {
-        console.error('Erro ao atualizar produto:', error)
-        res.status(500).json({ error: 'Erro ao atualizar produto' })
+        res.status(500).json({ error: `Erro ao atualizar produto: ${JSON.stringify(error)}` })
       }
       break
 
@@ -54,8 +52,7 @@ export default async function handler(
 
         res.status(200).json({ message: 'Produto deletado com sucesso' })
       } catch (error) {
-        console.error('Erro ao deletar produto:', error)
-        res.status(500).json({ error: 'Erro ao deletar produto' })
+        res.status(500).json({ error: `Erro ao deletar produto: ${JSON.stringify(error)}` })
       }
       break
 

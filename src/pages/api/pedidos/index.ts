@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
  
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getDatabase } from '@/database'
-import { Pedido } from '@/database/models'
+import { Pedido, Produto } from '@/database/models'
 import { ObjectId } from 'mongodb'
 
 export default async function handler(
@@ -11,7 +11,8 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const db = await getDatabase()
-  const collection = db.collection<Pedido>('pedidos')
+  const pedidosCollection = db.collection<Pedido>('pedidos') // CORRIGIDO: era produtosCollection
+  const produtosCollection = db.collection<Produto>('produtos')
 
   switch (req.method) {
     case 'GET':
@@ -27,7 +28,7 @@ export default async function handler(
           valorMax
         } = req.query
 
-        const query: Query = {}
+        const query: any = {}
 
         if (status && status !== 'todos') {
           query.status = status
@@ -72,7 +73,7 @@ export default async function handler(
           }
         }
 
-        let sort: any = { createdAt: -1 } 
+        let sort: any = { createdAt: -1 }
 
         if (ordenacao) {
           switch (ordenacao) {
@@ -91,17 +92,13 @@ export default async function handler(
           }
         }
 
-        const pedidos = await collection
+        const pedidos = await pedidosCollection
           .find(query)
           .sort(sort)
           .toArray()
 
-        console.log('Query MongoDB:', JSON.stringify(query, null, 2))
-        console.log('Total de pedidos encontrados:', pedidos.length)
-
         res.status(200).json(pedidos)
       } catch (error) {
-        console.error('Erro ao listar pedidos:', error)
         res.status(500).json({ error: 'Erro ao listar pedidos' })
       }
       break
@@ -114,7 +111,38 @@ export default async function handler(
           updatedAt: new Date()
         }
 
-        const resultado = await collection.insertOne(pedido)
+        // Verificar estoque disponível antes de criar o pedido
+        for (const item of pedido.itens) {
+          const produto = await produtosCollection.findOne({ 
+            _id: new ObjectId(item.produtoId) 
+          })
+
+          if (!produto) {
+            return res.status(400).json({ 
+              error: `Produto ${item.nome} não encontrado` 
+            })
+          }
+
+          if (produto.quantidade < item.quantidade) {
+            return res.status(400).json({ 
+              error: `Estoque insuficiente para ${item.nome}. Disponível: ${produto.quantidade}` 
+            })
+          }
+        }
+
+        // Deduzir quantidade do estoque para cada item
+        for (const item of pedido.itens) {
+          await produtosCollection.updateOne(
+            { _id: new ObjectId(item.produtoId) },
+            { 
+              $inc: { quantidade: -item.quantidade },
+              $set: { updatedAt: new Date() }
+            }
+          )
+        }
+
+        const resultado = await pedidosCollection.insertOne(pedido)
+        
         res.status(201).json({ ...pedido, _id: resultado.insertedId.toString() })
       } catch (error) {
         res.status(500).json({ error: 'Erro ao cadastrar pedido' })
@@ -129,10 +157,32 @@ export default async function handler(
           return res.status(400).json({ error: 'ID do pedido é obrigatório' })
         }
 
+        // Buscar pedido anterior para verificar mudança de status
+        const pedidoAnterior = await pedidosCollection.findOne({ 
+          _id: new ObjectId(pedido._id) 
+        })
+
+        if (!pedidoAnterior) {
+          return res.status(404).json({ error: 'Pedido não encontrado' })
+        }
+
+        // Se o pedido foi cancelado, devolver produtos ao estoque
+        if (pedido.status === 'cancelado' && pedidoAnterior.status !== 'cancelado') {
+          for (const item of pedidoAnterior.itens) {
+            await produtosCollection.updateOne(
+              { _id: new ObjectId(item.produtoId) },
+              { 
+                $inc: { quantidade: item.quantidade },
+                $set: { updatedAt: new Date() }
+              }
+            )
+          }
+        }
+
         const { _id, ...atualizacoes } = pedido
 
-        const resultado = await collection.updateOne(
-          { _id: new ObjectId(_id) } as any,
+        const resultado = await pedidosCollection.updateOne(
+          { _id: new ObjectId(_id) },
           { $set: { ...atualizacoes, updatedAt: new Date() } }
         )
 
@@ -142,7 +192,7 @@ export default async function handler(
 
         res.status(200).json({ ...pedido })
       } catch (error) {
-        res.status(500).json({ error: 'Erro ao atualizar pedido' })
+        res.status(500).json({ error: `Erro ao atualizar pedido: ${JSON.stringify(error)}` })
       }
       break
 

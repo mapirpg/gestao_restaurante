@@ -96,7 +96,6 @@ export default async function handler(
 
     res.status(200).json(estatisticas)
   } catch (error) {
-    console.error('Erro ao calcular estatísticas:', error)
     res.status(500).json({ error: 'Erro ao calcular estatísticas' })
   }
 }

@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
- 
 import { InProgress } from "@/components/InProgress";
 import { Statistics } from "@/components/Statistics";
 import { Toast } from "@/components/Toast";
@@ -21,7 +19,8 @@ import {
   IconButton,
   Tabs,
   Tab,
-  ChipProps} from "@mui/material";
+  ChipProps,
+  Chip} from "@mui/material";
 import React, { useCallback } from "react";
 
 const apiUrl = API_BASE_URL
@@ -77,6 +76,21 @@ export default function Pedidos() {
       return;
     }
 
+    // Verificar estoque disponível
+    const quantidadeJaAdicionada = itensPedido
+      .filter(item => item.produto._id === produtoSelecionado._id)
+      .reduce((acc, item) => acc + item.quantidade, 0);
+
+    const quantidadeTotal = quantidadeJaAdicionada + quantidadeSelecionada;
+
+    if (quantidadeTotal > produtoSelecionado.quantidade) {
+      setToastMessage({ 
+        message: `Estoque insuficiente! Disponível: ${produtoSelecionado.quantidade}. Já adicionado: ${quantidadeJaAdicionada}`, 
+        type: 'error' 
+      });
+      return;
+    }
+
     const novaLista = [...itensPedido, { produto: produtoSelecionado, quantidade: quantidadeSelecionada }]
     setItensPedido(novaLista);
     setProdutoSelecionado(undefined);
@@ -124,7 +138,6 @@ export default function Pedidos() {
     }
 
     const url = `${apiUrl}/pedidos?${params.toString()}`;
-    console.log('Buscando pedidos com filtros:', url);
 
     const res = await fetch(url, {
       method: 'GET',
@@ -133,10 +146,8 @@ export default function Pedidos() {
 
     if (res.ok) {
       const pedidos: Pedido[] = await res.json();
-      console.log('Pedidos retornados do backend:', pedidos.length);
       return pedidos;
     } else {
-      console.error('Erro ao listar pedidos:', res.statusText);
       return null;
     }
   }
@@ -178,11 +189,13 @@ export default function Pedidos() {
     });
 
     if (resposta.ok) {
-      setToastMessage({ message: 'Pedido cadastrado com sucesso', type: 'success' });
+      setToastMessage({ message: 'Pedido cadastrado com sucesso! Estoque atualizado.', type: 'success' });
       limparFormularioPedido();
       await atualizarPedidos();
+      await atualizarProdutos(); // Recarregar produtos para atualizar estoque
     } else {
-      setToastMessage({ message: `Erro ao cadastrar pedido`, type: 'error' });
+      const erro = await resposta.json();
+      setToastMessage({ message: erro.error || 'Erro ao cadastrar pedido', type: 'error' });
     }
   }
 
@@ -195,19 +208,20 @@ export default function Pedidos() {
     setObservacoes('');
   }
 
+  async function atualizarProdutos() {
+    const listaProdutos = await fetch(apiUrl + '/produtos')
+    if (listaProdutos.ok) {
+      const produtos: Produto[] = await listaProdutos.json();
+      setProdutos(produtos);
+    }
+  }
+
   async function inicializarDados() {
     setCarregandoProdutos(true);
     setCarregandoClientes(true);
     setCarregandoPedidos(true);
   
-    const listaProdutos = await fetch(apiUrl + '/produtos')
-
-    if (listaProdutos.ok) {
-      const produtos: Produto[] = await listaProdutos.json();
-      setProdutos(produtos);
-    } else {
-      setToastMessage({ message: 'Erro ao carregar produtos', type: 'error' });
-    }
+    await atualizarProdutos();
     setCarregandoProdutos(false);
   
     const listaClientes = await fetch(apiUrl + '/clientes')
@@ -291,8 +305,13 @@ export default function Pedidos() {
     });
 
     if (resposta.ok) {
-      setToastMessage({ message: 'Status do pedido atualizado com sucesso', type: 'success' });
+      const mensagem = novoStatus === 'cancelado' 
+        ? 'Pedido cancelado! Produtos devolvidos ao estoque.'
+        : 'Status do pedido atualizado com sucesso';
+      
+      setToastMessage({ message: mensagem, type: 'success' });
       await atualizarPedidos();
+      await atualizarProdutos(); // Atualizar estoque se cancelou
     } else {
       setToastMessage({ message: `Erro ao atualizar status do pedido`, type: 'error' });
     }
@@ -344,25 +363,44 @@ export default function Pedidos() {
                         label="Produtos"
                         value={produtoSelecionado?._id || ''}
                       >
-                        {produtos.map(produto => (
+                        {produtos.filter(p => p.disponivel && p.quantidade > 0).map(produto => (
                           <MenuItem 
-                            key={produto._id} value={produto._id}
+                            key={produto._id} 
+                            value={produto._id}
                             onClick={() => setProdutoSelecionado(produto)}
                           >
-                            {produto.nome}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                              <span>{produto.nome}</span>
+                              <Chip 
+                                label={`Estoque: ${produto.quantidade}`} 
+                                size="small" 
+                                color={produto.quantidade < 5 ? 'warning' : 'success'}
+                                sx={{ ml: 1 }}
+                              />
+                            </Box>
                           </MenuItem>
                         ))}
                       </Select>
                   </FormControl>
 
+                  {produtoSelecionado && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                      Estoque disponível: {produtoSelecionado.quantidade} unidades
+                    </Typography>
+                  )}
+
                   <TextField  
-                  fullWidth 
-                  type="number" 
-                  size="small" 
-                  name="quantidade" 
-                  placeholder="Quantidade"
-                  value={quantidadeSelecionada}
-                  onChange={(e) => setQuantidadeSelecionada(Number(e.target.value))}
+                    fullWidth 
+                    type="number" 
+                    size="small" 
+                    name="quantidade" 
+                    placeholder="Quantidade"
+                    value={quantidadeSelecionada}
+                    onChange={(e) => setQuantidadeSelecionada(Number(e.target.value))}
+                    inputProps={{ 
+                      min: 1, 
+                      max: produtoSelecionado?.quantidade || 999 
+                    }}
                   >
                     Quantidade
                   </TextField>
@@ -393,9 +431,15 @@ export default function Pedidos() {
                     <Box>
                       <Typography variant="body1">{item.produto.nome}</Typography>
                       <Typography variant="body2">Quantidade: {item.quantidade}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        R$ {item.produto.preco.toFixed(2)} cada
+                      </Typography>
                     </Box>
                     <Box>
-                      <IconButton onClick={() => removerItemPedido(index)}>
+                      <Typography variant="body1" fontWeight="bold">
+                        R$ {(item.produto.preco * item.quantidade).toFixed(2)}
+                      </Typography>
+                      <IconButton onClick={() => removerItemPedido(index)} size="small">
                         <Delete />
                       </IconButton>
                     </Box>

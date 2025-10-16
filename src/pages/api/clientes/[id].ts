@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { ObjectId } from 'mongodb'
 import { getDatabase } from '@/database'
-import { Cliente } from '@/database/models'
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,7 +8,7 @@ export default async function handler(
 ) {
   const { id } = req.query
   const db = await getDatabase()
-  const collection = db.collection<Cliente>('clientes')
+  const collection = db.collection('clientes')
 
   if (!ObjectId.isValid(id as string)) {
     return res.status(400).json({ error: 'ID inválido' })

@@ -26,7 +26,6 @@ export default function Clientes() {
       setClientes(v => [...v, cliente]);
       return cliente;
     } else {
-      console.error('Erro ao cadastrar cliente:', res.statusText);
       return null;
     }
   }
@@ -39,10 +38,8 @@ export default function Clientes() {
 
     if (res.ok) {
       const clientes: Cliente[] = await res.json();
-      console.log('Clientes listados:', clientes);
       return clientes;
     } else {
-      console.error('Erro ao listar clientes:', res.statusText);
       return null;
     }
   }
@@ -59,7 +56,6 @@ export default function Clientes() {
       return true;
     } else {
       setToastMessage({message: 'Erro ao deletar cliente.', type: 'error' });
-      console.error('Erro ao deletar cliente:', res.statusText);
       return false;
     }
   }

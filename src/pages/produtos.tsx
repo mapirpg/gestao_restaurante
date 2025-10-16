@@ -27,7 +27,6 @@ export default function Produtos() {
       setProdutos(v => [...v, produto]);
       return produto;
     } else {
-      console.error('Erro ao cadastrar produto:', res.statusText);
       return null;
     }
   }
@@ -40,10 +39,8 @@ export default function Produtos() {
 
     if (res.ok) {
       const produtos: Produto[] = await res.json();
-      console.log('Produtos listados:', produtos);
       return produtos;
     } else {
-      console.error('Erro ao listar produtos:', res.statusText);
       return null;
     }
   }
@@ -99,7 +96,6 @@ export default function Produtos() {
       setProdutos(v => v.filter(p => p._id !== produtoParaDeletar._id));
     } else {
       setToastMessage({message: 'Erro ao deletar produto.', type: 'error' });
-      console.error('Erro ao deletar produto:', res.statusText);
     }
 
     setProdutoParaDeletar(null);
