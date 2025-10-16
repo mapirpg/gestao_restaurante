@@ -18,8 +18,11 @@ import React from "react";
 
 export default function Home() {
   const [toastMessage, setToastMessage] = React.useState<{ message: string | undefined, type: AlertProps['severity']} | undefined>();
+  const [testando, setTestando] = React.useState(false);
 
   function testeApi() {
+    setTestando(true);
+
     fetch(API_BASE_URL + '/test-connection')
     .then(res => res.json())
     .then((data: { message?: string }) => {
@@ -29,6 +32,8 @@ export default function Home() {
     .catch(err => {
       console.error('Erro na requisição:', err);
       setToastMessage({ message: 'Erro ao conectar com a API', type: 'error'});
+    }).finally(() => {
+      setTestando(false);
     });
   }
 
@@ -36,11 +41,15 @@ export default function Home() {
     { method: 'GET', endpoint: '/api/test-connection', description: 'Testa conexão com MongoDB' },
     { method: 'GET', endpoint: '/api/clientes', description: 'Lista todos os clientes' },
     { method: 'POST', endpoint: '/api/clientes', description: 'Cria um novo cliente' },
+    { method: 'GET', endpoint: '/api/clientes/[id]', description: 'Busca cliente por ID' },
     { method: 'PUT', endpoint: '/api/clientes/[id]', description: 'Atualiza cliente' },
     { method: 'DELETE', endpoint: '/api/clientes/[id]', description: 'Remove cliente' },
-    { method: 'GET', endpoint: '/api/produtos', description: 'Lista produtos' },
+    { method: 'GET', endpoint: '/api/produtos', description: 'Lista produtos (com filtros)' },
     { method: 'POST', endpoint: '/api/produtos', description: 'Cria produto' },
-    { method: 'DELETE', endpoint: '/api/produtos/[id]', description: 'Remove produto' }
+    { method: 'DELETE', endpoint: '/api/produtos/[id]', description: 'Remove produto' },
+    { method: 'GET', endpoint: '/api/pedidos', description: 'Lista todos os pedidos' },
+    { method: 'POST', endpoint: '/api/pedidos', description: 'Cria um novo pedido' },
+    { method: 'PUT', endpoint: '/api/pedidos', description: 'Atualiza status do pedido' }
   ];
 
   function getMethodColor(method: string) {
@@ -82,6 +91,7 @@ export default function Home() {
               size="large"
               onClick={testeApi}
               startIcon={<ApiIcon />}
+              loading={testando}
               sx={{
                 mt: 1,
                 bgcolor: 'white',

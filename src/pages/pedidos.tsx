@@ -1,4 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
  
+import { InProgress } from "@/components/InProgress";
+import { Statistics } from "@/components/Statistics";
 import { Toast } from "@/components/Toast";
 import { API_BASE_URL, headers } from "@/config";
 import { Cliente, ItemPedido, Pedido, Produto } from "@/database/models";
@@ -18,14 +21,8 @@ import {
   IconButton,
   Tabs,
   Tab,
-  Card,
-  CardHeader,
-  CardContent,
-  Chip,
-  ChipProps,
-  Menu
-} from "@mui/material";
-import React from "react";
+  ChipProps} from "@mui/material";
+import React, { useCallback } from "react";
 
 const apiUrl = API_BASE_URL
 
@@ -46,10 +43,25 @@ export default function Pedidos() {
   const [clienteSelecionado, setClienteSelecionado] = React.useState<Cliente>();
   const [total, setTotal] = React.useState<number>(0);
 
+  const [observacoes, setObservacoes] = React.useState<string>('');
+
   const [pedidos, setPedidos] = React.useState<Pedido[]>([]);
+  const [pedidosFiltrados, setPedidosFiltrados] = React.useState<Pedido[]>([]);
   const [pedidoSelecionado, setPedidoSelecionado] = React.useState<Pedido>();
-  const [filtroPedidos, setFiltroPedidos] = React.useState<'cliente' | 'categoria' | 'asc' | 'desc'>('asc');
   const [ancoraStatusMenu, setAncoraStatusMenu] = React.useState<null | HTMLElement>(null);
+
+  // Filtros avançados - agora em um único objeto
+  const [filtrosAbertos, setFiltrosAbertos] = React.useState(false);
+  const [filtros, setFiltros] = React.useState({
+    status: 'todos',
+    cliente: 'todos',
+    busca: '',
+    ordenacao: 'data_desc' as 'data_desc' | 'data_asc' | 'valor_desc' | 'valor_asc',
+    dataInicio: '',
+    dataFim: '',
+    valorMin: '',
+    valorMax: ''
+  });
 
 
   function alterarAba(event: React.SyntheticEvent, newValue: number) {
@@ -121,6 +133,7 @@ export default function Pedidos() {
       itens,
       cliente: clienteSelecionado,
       status: 'preparando',
+      observacoes: observacoes || undefined,
     };
 
     const resposta = await fetch(apiUrl + '/pedidos', {
@@ -131,8 +144,8 @@ export default function Pedidos() {
 
     if (resposta.ok) {
       setToastMessage({ message: 'Pedido cadastrado com sucesso', type: 'success' });
-      setItensPedido([]);
-      setClienteSelecionado(undefined);
+      limparFormularioPedido();
+      await atualizarPedidos();
     } else {
       setToastMessage({ message: `Erro ao cadastrar pedido`, type: 'error' });
     }
@@ -144,6 +157,7 @@ export default function Pedidos() {
     setProdutoSelecionado(undefined);
     setQuantidadeSelecionada(1);
     setTotal(0);
+    setObservacoes('');
   }
 
   async function inicializarDados() {
@@ -176,18 +190,31 @@ export default function Pedidos() {
     setCarregandoPedidos(false);
   }
 
-  function atualizarTotal() {
+  const atualizarTotal = useCallback(() => {
     const novoTotal = itensPedido.reduce((acc, item) => acc + (item.produto.preco * item.quantidade), 0);
     setTotal(novoTotal);
-  }
+  }, [itensPedido]);
 
-  async function atualizarPedidos() {
+  const atualizarPedidos = useCallback(async () => {
     if (tabValue === 1) {
       setCarregandoPedidos(true);
       const lista = await listarPedidos()
       setPedidos(lista || []);
       setCarregandoPedidos(false);
     }
+  }, [tabValue]);
+
+  function limparFiltros() {
+    setFiltros({
+      status: 'todos',
+      cliente: 'todos',
+      busca: '',
+      ordenacao: 'data_desc',
+      dataInicio: '',
+      dataFim: '',
+      valorMin: '',
+      valorMax: ''
+    });
   }
 
   function corDoStatus(status: string): ChipProps['color'] {
@@ -240,19 +267,85 @@ export default function Pedidos() {
   }
 
   const desabilitarEnvio = !itensPedido.length || carregandoClientes || carregandoProdutos || !clienteSelecionado;
-  const desabilitarAlterarAba = carregandoClientes || carregandoProdutos || produtoSelecionado || itensPedido.length || clienteSelecionado || carregandoPedidos;
+  const desabilitarAlterarAba = carregandoClientes || carregandoProdutos || itensPedido.length || carregandoPedidos;
 
   React.useEffect(() => {
     atualizarTotal();
-  }, [itensPedido]);
+  }, [atualizarTotal]);
 
   React.useEffect(() => {
     atualizarPedidos();
-  }, [tabValue]);
+  }, [atualizarPedidos]);
 
   React.useEffect(() => {
     inicializarDados();
   }, []);
+
+  React.useEffect(() => {
+      function aplicarFiltros() {
+        let resultado = [...pedidos];
+
+        if (filtros.status !== 'todos') {
+          resultado = resultado.filter(p => p.status === filtros.status);
+        }
+
+        if (filtros.cliente !== 'todos') {
+          resultado = resultado.filter(p => p.cliente?._id === filtros.cliente);
+        }
+
+        if (filtros.busca) {
+          resultado = resultado.filter(p => 
+            p._id?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
+            p.cliente?.nome.toLowerCase().includes(filtros.busca.toLowerCase())
+          );
+        }
+
+        if (filtros.dataInicio) {
+          resultado = resultado.filter(p => {
+            const dataPedido = new Date(p.createdAt || '');
+            const dataInicio = new Date(filtros.dataInicio);
+            return dataPedido >= dataInicio;
+          });
+        }
+
+        if (filtros.dataFim) {
+          resultado = resultado.filter(p => {
+            const dataPedido = new Date(p.createdAt || '');
+            const dataFim = new Date(filtros.dataFim);
+            dataFim.setHours(23, 59, 59, 999);
+            return dataPedido <= dataFim;
+          });
+        }
+
+        if (filtros.valorMin) {
+          resultado = resultado.filter(p => p.total >= parseFloat(filtros.valorMin));
+        }
+
+        if (filtros.valorMax) {
+          resultado = resultado.filter(p => p.total <= parseFloat(filtros.valorMax));
+        }
+
+        switch (filtros.ordenacao) {
+          case 'data_desc':
+            resultado.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
+            break;
+          case 'data_asc':
+            resultado.sort((a, b) => new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime());
+            break;
+          case 'valor_desc':
+            resultado.sort((a, b) => b.total - a.total);
+            break;
+          case 'valor_asc':
+            resultado.sort((a, b) => a.total - b.total);
+            break;
+        }
+
+        setPedidosFiltrados(resultado);
+      }
+
+
+    aplicarFiltros();
+  }, [pedidos, filtros]);
 
   return (
     <div>
@@ -263,13 +356,10 @@ export default function Pedidos() {
         onClose={() => setToastMessage(undefined)}
       />
 
-      <Typography style={{ marginBottom: 20 }} >
-        Cadastrar Pedido
-      </Typography>
-
       <Tabs value={tabValue} onChange={alterarAba} style={{ marginBottom: 20 }}>
         <Tab label="Adicionar Pedido" />
         <Tab disabled={Boolean(desabilitarAlterarAba)} label="Pedidos em andamento"  />
+        <Tab disabled={Boolean(desabilitarAlterarAba)} label="Estatísticas"  />
       </Tabs>
 
       {tabValue === 0 && (
@@ -371,6 +461,18 @@ export default function Pedidos() {
                           ))}
                         </Select>
                     </FormControl>
+
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      label="Observações"
+                      value={observacoes}
+                      onChange={(e) => setObservacoes(e.target.value)}
+                      placeholder="Observações sobre o pedido (opcional)"
+                      sx={{ mt: 2 }}
+                    />
+
                     <Typography variant="h6" style={{ marginTop: 16 }}>
                       Total: R$ {total.toFixed(2)}
                     </Typography>
@@ -388,85 +490,28 @@ export default function Pedidos() {
       )}
 
       {tabValue === 1 && (
-        <>
-          <Box>
-            <Typography variant="h6" style={{ marginBottom: 20 }}>
-              Pedidos em andamento
-            </Typography>
-            <Select
-              defaultValue="desc"
-              value={filtroPedidos}
-              onChange={(e) => setFiltroPedidos(e.target.value as 'cliente' | 'categoria' | 'asc' | 'desc')}
-              style={{ marginBottom: 20 }}
-              >
-              <MenuItem value="cliente">Ordenar por Cliente</MenuItem>
-              <MenuItem value="categoria">Ordenar por Categoria</MenuItem>
-              <MenuItem value="asc">Mais novos primeiro</MenuItem>
-              <MenuItem value="desc">Mais antigos primeiro</MenuItem>
-            </Select>
-          </Box>
+        <InProgress
+          clientes={clientes}
+          pedidosFiltrados={pedidosFiltrados}
+          produtos={produtos}
+          corDoStatus={corDoStatus}
+          pedidos={pedidosFiltrados} 
+          carregandoPedidos={carregandoPedidos}
+          filtrosAbertos={filtrosAbertos}
+          setFiltrosAbertos={setFiltrosAbertos}
+          filtros={filtros}
+          setFiltros={setFiltros}
+          abrirMenuStatus={abrirMenuStatus}
+          ancoraStatusMenu={ancoraStatusMenu}
+          fecharMenuStatus={fecharMenuStatus}
+          alterarStatusPedido={alterarStatusPedido}
+          atualizarPedidos={atualizarPedidos}
+          limparFiltros={limparFiltros}
+        />
+      )}
 
-          {carregandoPedidos ? <CircularProgress /> : (
-            <Box 
-              sx={{
-                gap: 2,
-                display: 'flex', 
-                flexWrap: 'wrap', 
-                alignItems: pedidos.length ? 'flex-start' : 'center',
-                justifyContent: pedidos.length ? 'flex-start' : 'center',
-
-              }}
-            >
-            {pedidos.length ? pedidos.map((pedido) => (
-              <Card key={pedido._id} style={{ width: '20%', position: 'relative',   }}>
-              <CardHeader title={`Pedido #${pedido._id?.slice(-5)}`} subheader={`Cliente: ${pedido.cliente?.nome}`} />
-              <Menu
-                id="basic-menu"
-                anchorEl={ancoraStatusMenu}
-                open={Boolean(ancoraStatusMenu)}
-                onClose={fecharMenuStatus}
-                slotProps={{
-                  list: {
-                    'aria-labelledby': 'basic-button',
-                  },
-                }}
-              >
-                <MenuItem onClick={() => alterarStatusPedido('pendente')}>Pendente</MenuItem>
-                <MenuItem onClick={() => alterarStatusPedido('cancelado')}>Cancelar</MenuItem>
-                <MenuItem onClick={() => alterarStatusPedido('preparando')}>Preparando</MenuItem>
-                <MenuItem onClick={() => alterarStatusPedido('pronto')}>Pronto</MenuItem>
-                <MenuItem onClick={() => alterarStatusPedido('entregue')}>Entregue</MenuItem>
-              </Menu>  
-
-              <Chip
-                onClick={(e) => abrirMenuStatus(e, pedido)}
-                label={pedido.status} 
-                color={corDoStatus(pedido.status)} 
-                sx={{
-                  top: 16,
-                  right: 16,
-                  cursor: 'pointer',
-                  position: 'absolute',
-                }}
-              />
-
-              <CardContent>
-                {pedido.itens.map((item, index) => (
-                  <Box key={index}>
-                    <Typography variant="body2">{item.nome} x {item.quantidade}</Typography>
-                  </Box>
-                ))}
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  Total: R$ {pedido.total.toFixed(2)}
-                </Typography>
-              </CardContent>
-              </Card>
-            )) : (
-              <Typography>Nenhum pedido em andamento.</Typography>
-            )}
-            </Box>
-          )}
-        </>
+      {tabValue === 2 && (
+        <Statistics corDoStatus={corDoStatus} pedidos={pedidos} />
       )}
     </div>
   )

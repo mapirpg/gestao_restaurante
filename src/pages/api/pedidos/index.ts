@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
  
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getDatabase } from '@/database'
@@ -15,7 +16,7 @@ export default async function handler(
   switch (req.method) {
     case 'GET':
       try {
-        const pedidos = await collection.find().toArray()
+        const pedidos = await collection.find().sort({ createdAt: -1 }).toArray()
         res.status(200).json(pedidos)
       } catch (error) {
         res.status(500).json({ error: 'Erro ao listar pedidos' })
@@ -23,7 +24,11 @@ export default async function handler(
       break
     case 'POST':
       try {
-        const pedido: Pedido = req.body
+        const pedido: Pedido = {
+          ...req.body,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
 
         const resultado = await collection.insertOne(pedido)
         res.status(201).json({ ...pedido, _id: resultado.insertedId.toString() })
@@ -42,8 +47,8 @@ export default async function handler(
         const { _id, ...atualizacoes } = pedido
 
         const resultado = await collection.updateOne(
-          { _id: new ObjectId(_id) },
-          { $set: atualizacoes }
+          { _id: new ObjectId(_id) } as any,
+          { $set: { ...atualizacoes, updatedAt: new Date() } }
         )
 
         if (resultado.matchedCount === 0) {
