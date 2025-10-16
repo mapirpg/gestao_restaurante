@@ -29,7 +29,7 @@ export type StatusPedido  = 'pendente' | 'preparando' | 'pronto' | 'entregue' | 
 
 export interface Pedido {
   _id?: string
-  clienteId: string
+  cliente: Cliente
   itens: ItemPedido[]
   total: number
   status: StatusPedido
