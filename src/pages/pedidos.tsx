@@ -76,7 +76,6 @@ export default function Pedidos() {
       return;
     }
 
-    // Verificar estoque disponível
     const quantidadeJaAdicionada = itensPedido
       .filter(item => item.produto._id === produtoSelecionado._id)
       .reduce((acc, item) => acc + item.quantidade, 0);
@@ -192,7 +191,7 @@ export default function Pedidos() {
       setToastMessage({ message: 'Pedido cadastrado com sucesso! Estoque atualizado.', type: 'success' });
       limparFormularioPedido();
       await atualizarPedidos();
-      await atualizarProdutos(); // Recarregar produtos para atualizar estoque
+      await atualizarProdutos();
     } else {
       const erro = await resposta.json();
       setToastMessage({ message: erro.error || 'Erro ao cadastrar pedido', type: 'error' });
@@ -311,7 +310,7 @@ export default function Pedidos() {
       
       setToastMessage({ message: mensagem, type: 'success' });
       await atualizarPedidos();
-      await atualizarProdutos(); // Atualizar estoque se cancelou
+      await atualizarProdutos(); 
     } else {
       setToastMessage({ message: `Erro ao atualizar status do pedido`, type: 'error' });
     }

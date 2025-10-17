@@ -11,7 +11,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const db = await getDatabase()
-  const pedidosCollection = db.collection<Pedido>('pedidos') // CORRIGIDO: era produtosCollection
+  const pedidosCollection = db.collection<Pedido>('pedidos') 
   const produtosCollection = db.collection<Produto>('produtos')
 
   switch (req.method) {
